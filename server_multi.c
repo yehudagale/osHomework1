@@ -264,6 +264,7 @@ int main(int argc, char **argv)
 	/* setup the network socket */
 	pthread_t threads[NUM_THREADS];
 	pthread_t master;
+	init_buff();
 	pthread_create(&master, NULL, be_a_master, (void *)argv);
 	for (int i = 0; i < NUM_THREADS; i++)
 	{

@@ -5,3 +5,24 @@
  INFO: nweb starting:5003:14337
  INFO: nweb starting:5003:14392
  INFO: nweb starting:15003:14985
+ INFO: nweb starting:5003:17076
+ INFO: nweb starting:5003:21475
+ INFO: nweb starting:5003:21596
+ INFO: nweb starting:2003:23460
+ INFO: nweb starting:2003:25469
+ INFO: nweb starting:2003:25575
+ INFO: request:GET /index.html HTTP/1.0****:1
+ INFO: SEND:index.html:1
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:1
+ INFO: nweb starting:2003:25733
+ERROR: system call:bind Errno=98 exiting pid=25733
+ INFO: nweb starting:2003:25811
+ INFO: nweb starting:2003:25943
+ INFO: nweb starting:21113:26009
+ INFO: nweb starting:21113:26067
