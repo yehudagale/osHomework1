@@ -55,24 +55,37 @@ void init_buff()
 	pthread_cond_init(&cbuff.cond_m, 0);
 	pthread_cond_init(&cbuff.cond_w, 0);
 }
-int add_to(connection_buffer buff, connec con_to_add)
+int add_to(connection_buffer * buff, connec con_to_add)
 {
-	pthread_mutex_lock(&buff.buf_mutex);
-	while (buff.how_full != TBUFSIZE) pthread_cond_wait(&buff.cond_m, &buff.buf_mutex);
-	buff.connections[buff.how_full] = con_to_add;
-	buff.how_full++;
-	pthread_cond_signal(&buff.cond_w);
-	pthread_mutex_unlock(&buff.buf_mutex);
+	fprintf(stderr, "%s\n", "started add");
+	pthread_mutex_lock(&buff->buf_mutex);
+	fprintf(stderr, "%s%d%s%d\n", "locked mutex, buffer is: ", buff->how_full, " buffer size is: ", TBUFSIZE);
+	while (buff->how_full >= TBUFSIZE) {
+		pthread_cond_wait(&buff->cond_m, &buff->buf_mutex);
+	}
+	fprintf(stderr, "%s\n", "passed full check");
+	buff->connections[buff->how_full] = con_to_add;
+	buff->how_full++;
+	pthread_cond_signal(&buff->cond_w);
+	fprintf(stderr, "%s%d\n", "buffer after signal from master is: ", cbuff.how_full);
+	pthread_mutex_unlock(&buff->buf_mutex);
+	fprintf(stderr, "%s\n", "added to buffer");
 	return 1;
 }
-connec get_con(connection_buffer buff)
+connec get_con(connection_buffer * buff)
 {
-	pthread_mutex_lock(&buff.buf_mutex);
-	while (buff.how_full <= 0) pthread_cond_wait(&buff.cond_w, &buff.buf_mutex);
-	buff.how_full--;
-	connec to_ret = buff.connections[buff.how_full];
-	pthread_cond_signal(&buff.cond_m);
-	pthread_mutex_unlock(&buff.buf_mutex);
+	fprintf(stderr, "%s\n", "called get_con");
+	pthread_mutex_lock(&buff->buf_mutex);
+	fprintf(stderr, "%s\n", "locked mutex");
+	while (buff->how_full <= 0){
+		pthread_cond_wait(&buff->cond_w, &buff->buf_mutex);
+		fprintf(stderr, "%s\n", "thread woken");
+	} 
+	fprintf(stderr, "%s\n", "passed empty check");
+	buff->how_full--;
+	connec to_ret = buff->connections[buff->how_full];
+	pthread_cond_signal(&buff->cond_m);
+	pthread_mutex_unlock(&buff->buf_mutex);
 	return to_ret;
 }
 void logger(int type, char *s1, char *s2, int socket_fd)
@@ -175,8 +188,9 @@ void web(int fd, int hit)
 }
 void * be_a_worker(void * worker_cond)
 {
+	printf("%s\n", "created");
 	while(1){
-		connec connection = get_con(cbuff);
+		connec connection = get_con(&cbuff);
 		web(connection.fd, connection.hit);
 	}
 	return 0;
@@ -217,14 +231,14 @@ void * be_a_master(void * master_cond)
 		connec con_to_add;
 		con_to_add.hit = hit;
 		con_to_add.fd = socketfd; 
-		add_to(cbuff, con_to_add);
+		add_to(&cbuff, con_to_add);
+		fprintf(stderr, "%d\n", cbuff.how_full);
 	}
 	return 0;
 }
 int main(int argc, char **argv)
 {
 	int i;
-
 	if( argc < 3  || argc > 3 || !strcmp(argv[1], "-?") ) {
 		(void)printf("hint: nweb Port-Number Top-Directory\t\tversion %d\n\n"
 	"\tnweb is a small and very safe mini web server\n"
@@ -257,17 +271,19 @@ int main(int argc, char **argv)
 		return 0; /* parent returns OK to shell */
 	(void)signal(SIGCHLD, SIG_IGN); /* ignore child death */
 	(void)signal(SIGHUP, SIG_IGN); /* ignore terminal hangups */
-	for(i=0;i<32;i++)
-		(void)close(i);		/* close open files */
+	// for(i=0;i<32;i++)
+	// 	(void)close(i);		/* close open files */
+	fprintf(stderr, "%s\n", "made it to 265");
 	(void)setpgrp();		/* break away from process group */
 	logger(LOG,"nweb starting",argv[1],getpid());
 	/* setup the network socket */
 	pthread_t threads[NUM_THREADS];
-	pthread_t master;
 	init_buff();
-	pthread_create(&master, NULL, be_a_master, (void *)argv);
 	for (int i = 0; i < NUM_THREADS; i++)
 	{
 		pthread_create(&threads[i], NULL, be_a_worker, 0);
 	}
+	// sleep(1);
+	be_a_master(argv);
+	// fprintf(stderr, "%s\n", "made it to 275");
 }

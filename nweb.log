@@ -26,3 +26,131 @@ ERROR: system call:bind Errno=98 exiting pid=25733
  INFO: nweb starting:2003:25943
  INFO: nweb starting:21113:26009
  INFO: nweb starting:21113:26067
+ INFO: nweb starting:2113:29426
+ INFO: request:GET /index.html HTTP/1.0****:1
+ INFO: SEND:index.html:1
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:1
+ INFO: nweb starting:21113:29547
+ INFO: nweb starting:21113:30727
+ INFO: nweb starting:21113:30754
+ INFO: nweb starting:21113:30808
+ INFO: nweb starting:21113:30859
+ INFO: nweb starting:21113:23694
+ INFO: nweb starting:21113:24211
+ INFO: nweb starting:21113:25911
+ INFO: nweb starting:21113:26322
+ERROR: system call:bind Errno=98 exiting pid=26322
+ INFO: nweb starting:21113:26341
+ INFO: nweb starting:21113:17679
+ERROR: system call:bind Errno=98 exiting pid=17679
+ INFO: nweb starting:21113:18635
+ INFO: nweb starting:21113:18677
+ERROR: system call:bind Errno=98 exiting pid=18677
+ INFO: nweb starting:21113:18718
+ERROR: system call:bind Errno=98 exiting pid=18718
+ INFO: nweb starting:21113:18731
+ERROR: system call:bind Errno=98 exiting pid=18731
+ INFO: nweb starting:21113:18749
+ERROR: system call:bind Errno=98 exiting pid=18749
+ INFO: nweb starting:21113:18835
+ INFO: nweb starting:21113:19188
+ INFO: nweb starting:21113:19463
+ INFO: nweb starting:21113:19791
+ERROR: system call:bind Errno=98 exiting pid=19791
+ INFO: nweb starting:21113:19986
+ERROR: system call:bind Errno=98 exiting pid=19986
+ INFO: nweb starting:21113:20000
+ERROR: system call:bind Errno=98 exiting pid=20000
+ INFO: nweb starting:21113:20013
+ERROR: system call:bind Errno=98 exiting pid=20013
+ INFO: nweb starting:21113:20037
+ INFO: nweb starting:21113:20201
+ INFO: nweb starting:21113:20353
+ INFO: nweb starting:21113:20394
+ERROR: system call:bind Errno=98 exiting pid=20394
+ INFO: nweb starting:21113:20584
+ERROR: system call:bind Errno=98 exiting pid=20584
+ INFO: nweb starting:21113:20682
+ INFO: nweb starting:21113:20927
+ERROR: system call:bind Errno=98 exiting pid=20927
+ INFO: nweb starting:21113:20989
+ INFO: nweb starting:21113:21148
+ INFO: nweb starting:21113:21531
+ INFO: nweb starting:21113:21802
+ERROR: system call:bind Errno=98 exiting pid=21802
+ INFO: nweb starting:21113:22031
+ERROR: system call:bind Errno=98 exiting pid=22031
+ INFO: nweb starting:21113:22057
+ERROR: system call:bind Errno=98 exiting pid=22057
+ INFO: nweb starting:21113:22287
+ERROR: system call:bind Errno=98 exiting pid=22287
+ INFO: nweb starting:21113:22445
+ERROR: system call:bind Errno=98 exiting pid=22445
+ INFO: nweb starting:21113:22458
+ERROR: system call:bind Errno=98 exiting pid=22458
+ INFO: nweb starting:21113:22480
+ERROR: system call:bind Errno=98 exiting pid=22480
+ INFO: nweb starting:21113:22701
+ INFO: nweb starting:21113:23408
+ INFO: nweb starting:21113:23749
+ INFO: nweb starting:21113:24082
+ INFO: nweb starting:21113:24372
+ INFO: nweb starting:21113:24646
+ INFO: nweb starting:21113:25485
+ INFO: nweb starting:21113:25602
+ INFO: nweb starting:21113:25885
+ INFO: nweb starting:21113:26431
+ INFO: nweb starting:21113:27816
+ INFO: nweb starting:21113:28408
+ INFO: nweb starting:21113:28911
+ INFO: nweb starting:21113:29352
+ INFO: nweb starting:21113:29628
+ INFO: nweb starting:21113:30282
+ INFO: nweb starting:21113:30398
+ INFO: nweb starting:21113:32529
+ INFO: nweb starting:21113:1938
+ERROR: system call:bind Errno=98 exiting pid=1938
+ INFO: nweb starting:21113:2850
+ INFO: nweb starting:21113:4230
+ INFO: request:GET /index.html HTTP/1.0****:1
+ INFO: SEND:index.html:1
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:1
+ INFO: request:GET /index.html HTTP/1.0****:2
+ INFO: SEND:index.html:2
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:2
+ INFO: request:GET /index.html HTTP/1.0****:3
+ INFO: SEND:index.html:3
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:3
+ INFO: request:GET /nigel.jpg HTTP/1.0****:4
+ INFO: SEND:nigel.jpg:4
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:4
