@@ -47,6 +47,7 @@ typedef struct connection_buffer{
 	int how_full;
 	connec connections[TBUFSIZE];
 } connection_buffer;
+
 connection_buffer cbuff;
 void init_buff()
 {
@@ -121,7 +122,7 @@ void web(int fd, int hit)
 	int j, file_fd, buflen;
 	long i, ret, len;
 	char * fstr;
-	static char buffer[BUFSIZE+1]; /* static so zero filled */
+	char buffer[BUFSIZE+1]; /* static so zero filled */
 
 	ret =read(fd,buffer,BUFSIZE); 	/* read Web request in one go */
 	if(ret == 0 || ret == -1) {	/* read failure stop now */
@@ -267,10 +268,10 @@ int main(int argc, char **argv)
 		exit(4);
 	}
 	/* Become deamon + unstopable and no zombies children (= no wait()) */
-	if(fork() != 0)
-		return 0; /* parent returns OK to shell */
-	(void)signal(SIGCHLD, SIG_IGN); /* ignore child death */
-	(void)signal(SIGHUP, SIG_IGN); /* ignore terminal hangups */
+	// if(fork() != 0)
+	// 	return 0; /* parent returns OK to shell */
+	// (void)signal(SIGCHLD, SIG_IGN); /* ignore child death */
+	// (void)signal(SIGHUP, SIG_IGN); /* ignore terminal hangups */
 	// for(i=0;i<32;i++)
 	// 	(void)close(i);		/* close open files */
 	fprintf(stderr, "%s\n", "made it to 265");
@@ -285,5 +286,5 @@ int main(int argc, char **argv)
 	}
 	// sleep(1);
 	be_a_master(argv);
-	// fprintf(stderr, "%s\n", "made it to 275");
+	fprintf(stderr, "%s\n", "finished main");
 }

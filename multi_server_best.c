@@ -18,7 +18,7 @@
 #define LOG        44
 #define FORBIDDEN 403
 #define NOTFOUND  404
-#define NUM_THREADS 1
+#define NUM_THREADS 10
 #define TBUFSIZE 15
 struct {
 	char *ext;
@@ -42,8 +42,11 @@ typedef struct connec
 	int hit;
 	int fd;
 	char* request;
+	time_t xStatReqArrivalTime;
+	int dispatched_before;
 }connec;
 typedef struct connection_buffer{
+	int num_dispatched;
 	pthread_mutex_t buf_mutex;
 	pthread_cond_t cond_w;
 	pthread_cond_t cond_m;
@@ -53,15 +56,11 @@ typedef struct connection_buffer{
 connection_buffer cbuff;
 
 
-typedef struct master_stats{
-    int xStatReqArrivalTime;
-}m_stats;
 
-typedef struct global_stats{
-    int xStatReqDispatchCount;
-    int xStatReqDispatchTime;
-    int xStatReqCompleteCount;
-}g_stats;
+typedef struct num_completed{
+	int num_completed;
+	pthread_mutex_t com_mutex;
+}c_stat;
 
 
 typedef struct thread_stats{
@@ -70,16 +69,27 @@ typedef struct thread_stats{
     int xStatThreadHtml;//The total number of HTML requests this thread has handled
     int xStatThreadImage;//The total number of image requests this thread has handled
 }t_stats;
-m_stats master_info;
-g_stats global_info;
+c_stat completed;
 t_stats thread_data_array[NUM_THREADS];
 time_t start_time;
+time_t get_time_milli()
+{
+	struct timeval tv;
+	//used http://souptonuts.sourceforge.net/code/gettimeofday.c.html
+
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * 1000 + tv.tv_usec / 1000; 
+
+}
 void init_buff()
 {
+	cbuff.num_dispatched = 0;
 	cbuff.how_full = 0;
+	completed.num_completed = 0;
 	pthread_mutex_init(&cbuff.buf_mutex, 0);
 	pthread_cond_init(&cbuff.cond_m, 0);
 	pthread_cond_init(&cbuff.cond_w, 0);
+	pthread_mutex_init(&completed.com_mutex, 0);
 }
 int add_to(connection_buffer * buff, connec con_to_add)
 {
@@ -110,6 +120,7 @@ connec get_con(connection_buffer * buff)
 	fprintf(stderr, "%s\n", "passed empty check");
 	buff->how_full--;
 	connec to_ret = buff->connections[buff->how_full];
+	to_ret.dispatched_before = buff->num_dispatched++;
 	pthread_cond_signal(&buff->cond_m);
 	pthread_mutex_unlock(&buff->buf_mutex);
 	return to_ret;
@@ -142,7 +153,7 @@ void logger(int type, char *s1, char *s2, int socket_fd)
 }
 
 /* this is a child web server process, so we can exit on errors */
-void web(connec connection, t_stats t_data)
+void web(connec connection, t_stats t_data, time_t xStatReqDispatchTime)
 {
 	fprintf(stderr, "%s\n", "made it to web");
 	int fd = connection.fd;
@@ -192,49 +203,37 @@ void web(connec connection, t_stats t_data)
 	//free(connection.request);
     /* Send the statistical headers described in the paper,below
 
-    *The number of requests that arrived before this request arrived.
-     *Note that this is a shared value across all of the threads.*
-    (void)sprintf(buffer,"X-stat-req-arrival-count: %d\r\n", xStatReqArrivalCount);
-	dummy = write(fd,buffer,strlen(buffer));
 
     *The arrival time of this request, as first seen by the master thread.
-     * This time should be relative to the start time of the web server. *
-    (void)sprintf(buffer,"X-stat-req-arrival-time: %d\r\n", xStatReqArrivalTime);
+     * This time should be relative to the start time of the web server. */
+    (void)sprintf(buffer,"X-stat-req-arrival-time: %ld\r\n", connection.xStatReqArrivalTime);
     dummy = write(fd,buffer,strlen(buffer));
 
-    *The number of requests that were dispatched before this request was dispatched
-     * (i.e., when the request was picked by a worker thread).
-     * Note that this is a shared value across all of the threads. *
-    (void)sprintf(buffer,"X-stat-req-dispatch-count: %d\r\n", xStatReqDispatchCount);
+
+    /*The time this request was dispatched (i.e., when the request was picked by a worker thread).
+     * This time should be relative to the start time of the web server.*/
+    (void)sprintf(buffer,"X-stat-req-dispatch-time: %ld\r\n", xStatReqDispatchTime);
     dummy = write(fd,buffer,strlen(buffer));
 
-    *The time this request was dispatched (i.e., when the request was picked by a worker thread).
-     * This time should be relative to the start time of the web server.*
-    (void)sprintf(buffer,"X-stat-req-dispatch-time: %d\r\n", xStatReqDispatchTime);
-    dummy = write(fd,buffer,strlen(buffer));
 
-    *The number of requests that completed before this request completed;
-     * we define completed as the point after the file has been read
-     * and just before the worker thread starts writing the response on the socket.
-     * Note that this is a shared value across all of the threads. *
-    (void)sprintf(buffer,"X-stat-req-complete-count: %d\r\n", xStatReqCompleteCount);
-    dummy = write(fd,buffer,strlen(buffer));
 
-    *The time at which the read of the file is complete and the worker thread begins writing the response on the socket.
-     * This time should be relative to the start time of the web server. *
-    (void)sprintf(buffer,"X-stat-req-complete-time: %d\r\n", xStatReqCompleteTime);
-    dummy = write(fd,buffer,strlen(buffer));
-
-    *The number of requests that were given priority over this request
+    /*The number of requests that were given priority over this request
      * (that is, the number of requests that arrived after this request arrived,
      * but were dispatched before this request was dispatched).*
     (void)sprintf(buffer,"X-stat-req-age: %d\r\n", xStatReqAge);
     dummy = write(fd,buffer,strlen(buffer));
 
     */
-    
+    /*The number of requests that arrived before this request arrived.
+     *Note that this is a shared value across all of the threads.*/
     (void)sprintf(buffer,"X-stat-req-arrival-count: %d\r\n", connection.hit - 1);
     dummy = write(fd,buffer,strlen(buffer));
+    /*The number of requests that were dispatched before this request was dispatched
+     * (i.e., when the request was picked by a worker thread).
+     * Note that this is a shared value across all of the threads. */
+    (void)sprintf(buffer,"X-stat-req-dispatch-count: %d\r\n", connection.dispatched_before);
+    dummy = write(fd,buffer,strlen(buffer));
+
     (void)sprintf(buffer,"X-stat-thread-id: %d\r\n", t_data.xStatThreadId);
     dummy = write(fd,buffer,strlen(buffer));
     (void)sprintf(buffer,"X-stat-thread-count: %d\r\n", t_data.xStatThreadCount);
@@ -244,8 +243,19 @@ void web(connec connection, t_stats t_data)
     (void)sprintf(buffer,"X-stat-thread-image: %d\r\n", t_data.xStatThreadImage);
     dummy = write(fd,buffer,strlen(buffer));
 
-    
-    
+    /*The number of requests that completed before this request completed;
+     * we define completed as the point after the file has been read
+     * and just before the worker thread starts writing the response on the socket.
+     * Note that this is a shared value across all of the threads. */
+    pthread_mutex_lock(&completed.com_mutex);
+    (void)sprintf(buffer,"X-stat-req-complete-count: %d\r\n", completed.num_completed++);
+    pthread_mutex_unlock(&completed.com_mutex);
+    dummy = write(fd,buffer,strlen(buffer));
+    /*The time at which the read of the file is complete and the worker thread begins writing the response on the socket.
+     * This time should be relative to the start time of the web server. */
+    (void)sprintf(buffer,"X-stat-req-complete-time: %ld\r\n", get_time_milli() - start_time);
+    dummy = write(fd,buffer,strlen(buffer));
+
     /* send file in 8KB block - last block may be smaller */
 	while (	(ret = read(file_fd, buffer, BUFSIZE)) > 0 ) {
 		dummy = write(fd,buffer,ret);
@@ -285,6 +295,7 @@ void * be_a_worker(void * worker_cond)
 	int imgReq =0, htmlReq = 0;
 	for(int req = 1 ; ; req++){
 		connec connection = get_con(&cbuff);
+		time_t dispatch_time = get_time_milli() - start_time;
 		fprintf(stderr, "we seg fault on connection.request\n" );
 		char* file_type = malloc(12* sizeof(char));
 		file_type = get_file_type(connection.request, file_type);
@@ -299,7 +310,7 @@ void * be_a_worker(void * worker_cond)
 		// free(file_type);
 		t_data->xStatThreadCount = req;
 		fprintf(stderr, "we never get here\n" );
-		web(connection, *t_data);
+		web(connection, *t_data, dispatch_time);
 	}
 	return 0;
 }
@@ -365,6 +376,7 @@ void * be_a_master(void * master_cond)
 			// 	(void)close(socketfd);
 			// }
 		connec con_to_add;
+		con_to_add.xStatReqArrivalTime = get_time_milli() - start_time;
 		con_to_add.hit = hit;
 		con_to_add.fd = socketfd; 
 		//put request string
@@ -426,7 +438,7 @@ int main(int argc, char **argv)
 	//used http://souptonuts.sourceforge.net/code/gettimeofday.c.html
 
 	gettimeofday(&tv, NULL);
-	start_time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+	start_time = get_time_milli();
 	fprintf(stderr, "start time: %ld\n", start_time);
 	for (int i = 0; i < NUM_THREADS; i++)
 	{
