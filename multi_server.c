@@ -18,13 +18,13 @@
 #define LOG        44
 #define FORBIDDEN 403
 #define NOTFOUND  404
-#define NUM_THREADS 10
-#define TBUFSIZE 10
+#define NUM_THREADS 1
+#define TBUFSIZE 15
+
 #define FIFO 0
 #define HPIC 1
 #define HPHC 2
-#define TXT 0
-#define IMG 1
+
 struct {
 	char *ext;
 	char *filetype;
@@ -44,38 +44,52 @@ struct {
 static int dummy; //keep compiler happy
 typedef struct connec
 {
-	char type;
 	int hit;
 	int fd;
 	char* request;
-	time_t xStatReqArrivalTime;
-	int dispatched_before;
-	int arrived_after_picked_before;
 }connec;
-typedef struct connec_queue
-{
-	int front;
-	int rear;
-	connec * connections;
-} connec_queue;
 typedef struct connection_buffer{
-	int num_dispatched;
 	pthread_mutex_t buf_mutex;
 	pthread_cond_t cond_w;
 	pthread_cond_t cond_m;
 	int how_full;
+	int front_q;
+    int rear_q;
 	int schedule_type;
-	connec_queue high_priority_queue;
-	connec_queue default_queue;
+	connec connections[TBUFSIZE];
 } connection_buffer;
 connection_buffer cbuff;
+/* Second queue 
+typedef struct circularQueue_s{
+    int front;
+    int rear;
+    int validItems;
+    int data[MAX_ITEMS];
+} circular_q;
 
+void initializeQueue(circularQueue_t *theQueue)
+{
+    int i;
+    theQueue->validItems  =  0;
+    theQueue->front =  0;
+    theQueue->rear  =  0;
+    for(i=0; i < MAX_ITEMS; i++){
+        theQueue->data[i] = 0;
+    }        
+    return;
+}
+*/
 
+typedef struct master_stats{
+    int xStatReqArrivalTime;
+}m_stats;
 
-typedef struct num_completed{
-	int num_completed;
-	pthread_mutex_t com_mutex;
-}c_stat;
+typedef struct global_stats{
+    int xStatReqDispatchCount;
+    int xStatReqDispatchTime;
+    int xStatReqCompleteCount;
+}g_stats;
+
 
 typedef struct thread_stats{
     int xStatThreadId;//The id of the responding thread (numbered 0 to number of threads-1)
@@ -83,17 +97,12 @@ typedef struct thread_stats{
     int xStatThreadHtml;//The total number of HTML requests this thread has handled
     int xStatThreadImage;//The total number of image requests this thread has handled
 }t_stats;
-c_stat completed;
+
+m_stats master_info;
+g_stats global_info;
 t_stats thread_data_array[NUM_THREADS];
 time_t start_time;
-time_t get_time_milli()
-{
-	struct timeval tv;
-	//used http://souptonuts.sourceforge.net/code/gettimeofday.c.html
 
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec * 1000 + tv.tv_usec / 1000; 
-}
 /**
  * Gets the type of scheduling process it will use
  * @param type
@@ -101,7 +110,7 @@ time_t get_time_milli()
  */
 int get_schedule_type(char *type){
     int schedule_type;
-    //?*?fprintf(stderr, "Type in schedule_type is: %s\n",type);
+    fprintf(stderr, "Type in schedule_type is: %s\n",type);
     if(strncmp(type,"FIFO",5) == 0){
         schedule_type = FIFO;
         fprintf(stderr, "FIFO is set\n");
@@ -115,130 +124,92 @@ int get_schedule_type(char *type){
     }
     return schedule_type;
 }
-void init_buff(int schedule_type)
+
+
+void init_buff(char * schedule_type)
 {
-	cbuff.default_queue.front = 0;
-	cbuff.default_queue.rear = 0;
-	cbuff.default_queue.connections = malloc(sizeof(connec) * TBUFSIZE);
-	cbuff.high_priority_queue.rear = 0;
-	cbuff.high_priority_queue.front = 0;
-	cbuff.high_priority_queue.connections = malloc(sizeof(connec) * TBUFSIZE);
-	cbuff.num_dispatched = 0;
 	cbuff.how_full = 0;
-	completed.num_completed = 0;
-	cbuff.schedule_type = schedule_type;
+	cbuff.front_q = 0;
+    cbuff.rear_q = 0;
 	pthread_mutex_init(&cbuff.buf_mutex, 0);
 	pthread_cond_init(&cbuff.cond_m, 0);
 	pthread_cond_init(&cbuff.cond_w, 0);
-	pthread_mutex_init(&completed.com_mutex, 0);
-}
-//does not check for full or empty since that is already taken care of
-connec deque(connec_queue * queue)
-{
-	connec to_ret = queue->connections[queue->front++];
-	queue->front = queue->front % TBUFSIZE;
-	return to_ret;
-}
-int is_empty(connec_queue * queue)
-{
-	return queue->front == queue->rear;
-}
-void enque(connec connection, connec_queue * queue)
-{
-	queue->connections[queue->rear++] = connection;
-	queue->rear = queue->rear % TBUFSIZE;
+	cbuff.schedule_type = get_schedule_type(schedule_type);
+	fprintf(stderr, "S_type = %d\n",cbuff.schedule_type);
 
 }
+
 int add_to(connection_buffer * buff, connec con_to_add)
 {
-	//?*?fprintf(stderr, "%s\n", "started add");
+	fprintf(stderr, "%s\n", "started add_to buffer");
 	pthread_mutex_lock(&buff->buf_mutex);
-	//?*?fprintf(stderr, "%s%d%s%d\n", "locked mutex, buffer is: ", buff->how_full, " buffer size is: ", TBUFSIZE);
+	fprintf(stderr, "%s%d%s%d\n", "locked mutex, buffer is: ", buff->how_full, " buffer size is: ", TBUFSIZE);
 	while (buff->how_full >= TBUFSIZE) {
 		pthread_cond_wait(&buff->cond_m, &buff->buf_mutex);
 	}
+	
 	switch(buff->schedule_type){
-		case FIFO :
-			enque(con_to_add, &buff->default_queue);
-		break;
-		case HPIC:
-			//?*?fprintf(stderr, "**************************************type is %d\n", con_to_add.type);
-			if (con_to_add.type == IMG)
-			{
-				enque(con_to_add, &buff->high_priority_queue);
-			}
-			else{
-				enque(con_to_add, &buff->default_queue);
-			}
-			break;
-		case HPHC:
-			if (con_to_add.type == TXT)
-			{
-				enque(con_to_add, &buff->high_priority_queue);
-			}
-			else{
-				enque(con_to_add, &buff->default_queue);
-			}
-			break;
-		default: //stack-based LIFO
-			buff->default_queue.connections[buff->how_full] = con_to_add;
-	}
-	//?*?fprintf(stderr, "%s\n", "passed full check");
+		//http://www.xappsoftware.com/wordpress/2012/09/27/a-simple-implementation-of-a-circular-queue-in-c-language/
+        case FIFO ://FIFO enque
+            
+            buff->rear_q = (buff->rear_q + 1)%(TBUFSIZE - 1);
+            fprintf(stderr, "buff->front_q is %d\n",buff->front_q );
+            fprintf(stderr, "buff->rear_q is %d\n",buff->rear_q );
+            buff->connections[buff->rear_q] = con_to_add;
+
+            fprintf(stderr, "%s\n", "Insertion success!!!");
+            break;
+        case HPIC ://HPIC still needs to be done, pics/JPG content goes first
+            break;
+        case HPHC ://HPHC still needs to be done, html pages goes first
+            break;
+        default ://stack based -LIFO
+            buff->connections[buff->how_full] = con_to_add;
+            fprintf(stderr, "LIFO is added\n");
+            /*above 2 lines*/
+    }
+
+	fprintf(stderr, "%s\n", "passed full check");
 	buff->how_full++;
 	pthread_cond_signal(&buff->cond_w);
-	////?*?fprintf(stderr, "%s%d\n", "buffer after signal from master is: ", cbuff.how_full);
+	fprintf(stderr, "%s%d\n", "buffer after signal from master is: ", cbuff.how_full);
 	pthread_mutex_unlock(&buff->buf_mutex);
-	//?*?fprintf(stderr, "%s\n", "added to buffer");
+	fprintf(stderr, "%s\n", "added to buffer");
 	return 1;
 }
+
+
 connec get_con(connection_buffer * buff)
 {
+	connec to_ret;	
+	fprintf(stderr, "%s\n", "called get_con");
 	pthread_mutex_lock(&buff->buf_mutex);
+	fprintf(stderr, "%s\n", "locked mutex");
 	while (buff->how_full <= 0){
 		pthread_cond_wait(&buff->cond_w, &buff->buf_mutex);
+		fprintf(stderr, "%s\n", "thread woken");
 	} 
 	buff->how_full--;
-	connec to_ret;
-	//?*?fprintf(stderr, "schedule type is: %d\n", buff->schedule_type);
-	switch(buff->schedule_type){
-		case FIFO :
-			to_ret = deque(&buff->default_queue);
-			//no need to check for age since a queue always has age 0
-		break;
-		case HPIC:
-		case HPHC:
-			//?*?fprintf(stderr, "ran the HPIC/HPHC code and the queue is %d\n",is_empty(&buff->high_priority_queue));
-			if (is_empty(&buff->high_priority_queue))
-			{
-				to_ret = deque(&buff->default_queue);
-			}
-			else{
-				to_ret = deque(&buff->high_priority_queue);
-				//?*?fprintf(stderr, "**ran the ageing code for %d \n", buff->schedule_type);
-				for (int i = buff->default_queue.rear; i != buff->default_queue.front ; i = (i - 1) % TBUFSIZE)
-				{
-					if (buff->default_queue.connections[i].hit > to_ret.hit)
-					{
-						buff->default_queue.connections[i].arrived_after_picked_before++;
-						//?*?fprintf(stderr, "**aged item %d by one\n", i);
-					}
-					else{
-						break;
-					}
-				}
-			}
-			break;
-		default: //stack-based LIFO
-			to_ret = buff->default_queue.connections[buff->how_full];
-			if (buff->how_full >= 0)
-			{
-				for (int i = buff->how_full - 1; i >= 0; i--)
-				{
-					buff->default_queue.connections[i].arrived_after_picked_before += 1;
-				}
-			}
-	}
-	to_ret.dispatched_before = buff->num_dispatched++;
+	fprintf(stderr, "buff->front_q is %d\n",buff->front_q );
+	fprintf(stderr, "buff->rear_q is %d\n",buff->rear_q );
+	//http://www.xappsoftware.com/wordpress/2012/09/27/a-simple-implementation-of-a-circular-queue-in-c-language/
+    /*Which scheduler will be done*/
+    switch(buff->schedule_type){
+        case FIFO ://FIFO deque
+            //remove value from queue and save it
+            to_ret = buff->connections[buff->front_q];
+            fprintf(stderr, "Removed connection from q\n");
+            buff->front_q = (buff->front_q + 1)%(TBUFSIZE - 1);
+            break;
+        case HPIC ://HPIC
+            break;
+        case HPHC ://HPHC
+            break;
+        default ://stack based -LIFO
+            to_ret = buff->connections[buff->how_full];
+    }
+
+	fprintf(stderr, "%s\n", "passed empty check");
 	pthread_cond_signal(&buff->cond_m);
 	pthread_mutex_unlock(&buff->buf_mutex);
 	return to_ret;
@@ -271,16 +242,16 @@ void logger(int type, char *s1, char *s2, int socket_fd)
 }
 
 /* this is a child web server process, so we can exit on errors */
-void web(connec connection, t_stats t_data, time_t xStatReqDispatchTime)
+void web(connec connection, t_stats t_data)
 {
-	//?*?fprintf(stderr, "%s\n", "made it to web");
+	fprintf(stderr, "%s\n", "made it to web");
 	int fd = connection.fd;
 	int hit = connection.hit; 
 	char* buffer = connection.request;
 	char * fstr;
 	int j, file_fd, buflen;
 	long i, ret, len;
-	//?*?fprintf(stderr, "connection is: %s\n", connection.request);
+	fprintf(stderr, "connection is: %s\n", connection.request);
 	if( strncmp(buffer,"GET ",4) && strncmp(buffer,"get ",4) ) {
 		logger(FORBIDDEN,"Only simple GET operation supported",buffer,fd);
 	}
@@ -321,36 +292,49 @@ void web(connec connection, t_stats t_data, time_t xStatReqDispatchTime)
 	//free(connection.request);
     /* Send the statistical headers described in the paper,below
 
+    *The number of requests that arrived before this request arrived.
+     *Note that this is a shared value across all of the threads.*
+    (void)sprintf(buffer,"X-stat-req-arrival-count: %d\r\n", xStatReqArrivalCount);
+	dummy = write(fd,buffer,strlen(buffer));
 
     *The arrival time of this request, as first seen by the master thread.
-     * This time should be relative to the start time of the web server. */
-    (void)sprintf(buffer,"X-stat-req-arrival-time: %ld\r\n", connection.xStatReqArrivalTime);
+     * This time should be relative to the start time of the web server. *
+    (void)sprintf(buffer,"X-stat-req-arrival-time: %d\r\n", xStatReqArrivalTime);
     dummy = write(fd,buffer,strlen(buffer));
 
-
-    /*The time this request was dispatched (i.e., when the request was picked by a worker thread).
-     * This time should be relative to the start time of the web server.*/
-    (void)sprintf(buffer,"X-stat-req-dispatch-time: %ld\r\n", xStatReqDispatchTime);
+    *The number of requests that were dispatched before this request was dispatched
+     * (i.e., when the request was picked by a worker thread).
+     * Note that this is a shared value across all of the threads. *
+    (void)sprintf(buffer,"X-stat-req-dispatch-count: %d\r\n", xStatReqDispatchCount);
     dummy = write(fd,buffer,strlen(buffer));
 
+    *The time this request was dispatched (i.e., when the request was picked by a worker thread).
+     * This time should be relative to the start time of the web server.*
+    (void)sprintf(buffer,"X-stat-req-dispatch-time: %d\r\n", xStatReqDispatchTime);
+    dummy = write(fd,buffer,strlen(buffer));
 
+    *The number of requests that completed before this request completed;
+     * we define completed as the point after the file has been read
+     * and just before the worker thread starts writing the response on the socket.
+     * Note that this is a shared value across all of the threads. *
+    (void)sprintf(buffer,"X-stat-req-complete-count: %d\r\n", xStatReqCompleteCount);
+    dummy = write(fd,buffer,strlen(buffer));
 
-    /*The number of requests that were given priority over this request
+    *The time at which the read of the file is complete and the worker thread begins writing the response on the socket.
+     * This time should be relative to the start time of the web server. *
+    (void)sprintf(buffer,"X-stat-req-complete-time: %d\r\n", xStatReqCompleteTime);
+    dummy = write(fd,buffer,strlen(buffer));
+
+    *The number of requests that were given priority over this request
      * (that is, the number of requests that arrived after this request arrived,
-     * but were dispatched before this request was dispatched).*/
-    (void)sprintf(buffer,"X-stat-req-age: %d\r\n", connection.arrived_after_picked_before);
+     * but were dispatched before this request was dispatched).*
+    (void)sprintf(buffer,"X-stat-req-age: %d\r\n", xStatReqAge);
     dummy = write(fd,buffer,strlen(buffer));
 
-    /*The number of requests that arrived before this request arrived.
-     *Note that this is a shared value across all of the threads.*/
+    */
+    
     (void)sprintf(buffer,"X-stat-req-arrival-count: %d\r\n", connection.hit - 1);
     dummy = write(fd,buffer,strlen(buffer));
-    /*The number of requests that were dispatched before this request was dispatched
-     * (i.e., when the request was picked by a worker thread).
-     * Note that this is a shared value across all of the threads. */
-    (void)sprintf(buffer,"X-stat-req-dispatch-count: %d\r\n", connection.dispatched_before);
-    dummy = write(fd,buffer,strlen(buffer));
-
     (void)sprintf(buffer,"X-stat-thread-id: %d\r\n", t_data.xStatThreadId);
     dummy = write(fd,buffer,strlen(buffer));
     (void)sprintf(buffer,"X-stat-thread-count: %d\r\n", t_data.xStatThreadCount);
@@ -360,19 +344,8 @@ void web(connec connection, t_stats t_data, time_t xStatReqDispatchTime)
     (void)sprintf(buffer,"X-stat-thread-image: %d\r\n", t_data.xStatThreadImage);
     dummy = write(fd,buffer,strlen(buffer));
 
-    /*The number of requests that completed before this request completed;
-     * we define completed as the point after the file has been read
-     * and just before the worker thread starts writing the response on the socket.
-     * Note that this is a shared value across all of the threads. */
-    pthread_mutex_lock(&completed.com_mutex);
-    (void)sprintf(buffer,"X-stat-req-complete-count: %d\r\n", completed.num_completed++);
-    pthread_mutex_unlock(&completed.com_mutex);
-    dummy = write(fd,buffer,strlen(buffer));
-    /*The time at which the read of the file is complete and the worker thread begins writing the response on the socket.
-     * This time should be relative to the start time of the web server. */
-    (void)sprintf(buffer,"X-stat-req-complete-time: %ld\r\n", get_time_milli() - start_time);
-    dummy = write(fd,buffer,strlen(buffer));
-
+    
+    
     /* send file in 8KB block - last block may be smaller */
 	while (	(ret = read(file_fd, buffer, BUFSIZE)) > 0 ) {
 		dummy = write(fd,buffer,ret);
@@ -389,17 +362,17 @@ char* get_file_type(char* buffer, char * fstr) {
     		break;
     	}
     }
-    //?*?fprintf(stderr, "buffer after fix: %s\n", buffer);
+    fprintf(stderr, "buffer after fix: %s\n", buffer);
     unsigned int buflen = strlen(buffer);
     for(i=0;extensions[i].ext != 0;i++) {
         len = strlen(extensions[i].ext);
-        // //?*?fprintf(stderr, "buffer: %s %s\n", &buffer[buflen-len], extensions[i].ext);
+        fprintf(stderr, "buffer: %s %s\n", &buffer[buflen-len], extensions[i].ext);
         if(!strncmp(&buffer[buflen-len], extensions[i].ext, len)) {
             fstr =extensions[i].filetype;
             break;
         }
     }
-    //?*?fprintf(stderr, "in get file type %s\n", fstr);
+    fprintf(stderr, "in get file type %s\n", fstr);
     return fstr;
 }
 
@@ -407,23 +380,27 @@ void * be_a_worker(void * worker_cond)
 {
 	printf("%s\n", "created");
 	t_stats *t_data = (t_stats*) worker_cond;
-	//int t_id = t_data->xStatThreadId;
-	//?*?fprintf(stderr, "Thread_id is:%d \n", t_id);
+	int t_id = t_data->xStatThreadId;
+	fprintf(stderr, "Thread_id is:%d \n", t_id);
 	int imgReq =0, htmlReq = 0;
 	for(int req = 1 ; ; req++){
 		connec connection = get_con(&cbuff);
-		//?*?fprintf(stderr, "here is the request: %s\n", connection.request);
-		time_t dispatch_time = get_time_milli() - start_time;
-		if(connection.type == TXT){
+		fprintf(stderr, "we seg fault on connection.request\n" );
+		char* file_type = malloc(12* sizeof(char));
+		file_type = get_file_type(connection.request, file_type);
+
+		fprintf(stderr, "this is file type: %s\n", file_type);
+		if(strncmp(file_type,"text",4) == 0){
 		    t_data->xStatThreadHtml = ++htmlReq;
-		    //?*?fprintf(stderr, "%d\n", htmlReq);
+		    fprintf(stderr, "%d\n", htmlReq);
 		    
-		}else if (connection.type == IMG){
+		}else if (strncmp(file_type,"image",5) == 0){
 		    t_data->xStatThreadImage = ++imgReq;
 		}
 		// free(file_type);
 		t_data->xStatThreadCount = req;
-		web(connection, *t_data, dispatch_time);
+		fprintf(stderr, "we never get here\n" );
+		web(connection, *t_data);
 	}
 	return 0;
 }
@@ -489,72 +466,22 @@ void * be_a_master(void * master_cond)
 			// 	(void)close(socketfd);
 			// }
 		connec con_to_add;
-		con_to_add.xStatReqArrivalTime = get_time_milli() - start_time;
 		con_to_add.hit = hit;
 		con_to_add.fd = socketfd; 
-		con_to_add.arrived_after_picked_before = 0;
-		//?*?fprintf(stderr, "%s\n", "about to read");
-		con_to_add.request = read_req(socketfd);
-		char file_type2[20];
-		// con_to_add.request = malloc(sizeof(char) * (strlen(tmp) + 1));
-		//strcpy(con_to_add.request, tmp);
-		//?*?fprintf(stderr, "request before is: %s\n", con_to_add.request);
-		char * file_type = get_file_type(con_to_add.request, file_type2);
-		//?*?fprintf(stderr, "request after is: %s\n", con_to_add.request);
-		if(strncmp(file_type,"text",4) == 0){
-			con_to_add.type = TXT;
-		    
-		}else if (strncmp(file_type,"image",5) == 0){
-			con_to_add.type = IMG;
-		}
-		else{
-			con_to_add.type = 3;
-		}
 		//put request string
+		fprintf(stderr, "%s\n", "about to read");
+		con_to_add.request = read_req(socketfd);
+		fprintf(stderr, "request is: %s\n", con_to_add.request);
 		add_to(&cbuff, con_to_add);
-		//?*?fprintf(stderr, "%d\n", cbuff.how_full);
+		fprintf(stderr, "%d\n", cbuff.how_full);
 	}
 	return 0;
 }
 
-void test(char ** argv)
-{
 
-	static connec_queue test_queue;
-	connec test0;
-	test0.hit = 0;
-	test0.fd = 0;
-	test0.request= "test0";
-	test0.xStatReqArrivalTime = get_time_milli();
-	test0.dispatched_before = 0;
-	test0.arrived_after_picked_before = 0;
-	connec test1;
-	test1.hit = 0;
-	test1.fd = 0;
-	test1.request= "test1";
-	test1.xStatReqArrivalTime = get_time_milli();
-	test1.dispatched_before = 0;
-	test1.arrived_after_picked_before = 0;
-	connec test3;
-	test3.hit = 0;
-	test3.fd = 0;
-	test3.request= "test3";
-	test3.xStatReqArrivalTime = get_time_milli();
-	test3.dispatched_before = 0;
-	test3.arrived_after_picked_before = 0;
-
-	enque(test0, &test_queue);
-	enque(test1, &test_queue);
-	fprintf(stderr, "%s\n", deque(&test_queue).request);
-	enque(test3, &test_queue);
-	fprintf(stderr, "%s\n", deque(&test_queue).request);
-	fprintf(stderr, "%s\n", deque(&test_queue).request);
-
-	exit(0);
-}
 int main(int argc, char **argv)
 {
-	//test(argv);
+
 	int i;
 	if( argc < 5  || argc > 5 || !strcmp(argv[1], "-?") ) {
 		(void)printf("hint: nweb Port-Number Top-Directory\t\tversion %d\n\n"
@@ -585,7 +512,7 @@ int main(int argc, char **argv)
 	}
 	/* Become deamon + unstopable and no zombies children (= no wait()) */
 	// if(fork() != 0)
-	// 	return 0; // parent returns OK to shell 
+	// 	return 0;  parent returns OK to shell 
 	(void)signal(SIGCHLD, SIG_IGN); /* ignore child death */
 	(void)signal(SIGHUP, SIG_IGN); /* ignore terminal hangups */
 	// for(i=0;i<32;i++)
@@ -595,13 +522,14 @@ int main(int argc, char **argv)
 	logger(LOG,"nweb starting",argv[1],getpid());
 	/* setup the network socket */
 	pthread_t threads[NUM_THREADS];
-	init_buff(get_schedule_type(argv[4]));
+	init_buff(argv[4]);
 	struct timeval tv;
 	//used http://souptonuts.sourceforge.net/code/gettimeofday.c.html
 
 	gettimeofday(&tv, NULL);
-	start_time = get_time_milli();
+	start_time = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 	fprintf(stderr, "start time: %ld\n", start_time);
+	
 	for (int i = 0; i < NUM_THREADS; i++)
 	{
 		thread_data_array[i].xStatThreadId = i;
