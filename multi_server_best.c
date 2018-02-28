@@ -18,8 +18,8 @@
 #define LOG        44
 #define FORBIDDEN 403
 #define NOTFOUND  404
-#define NUM_THREADS 10
-#define TBUFSIZE 10
+int NUM_THREADS;
+int TBUFSIZE;
 #define FIFO 0
 #define HPIC 1
 #define HPHC 2
@@ -84,7 +84,7 @@ typedef struct thread_stats{
     int xStatThreadImage;//The total number of image requests this thread has handled
 }t_stats;
 c_stat completed;
-t_stats thread_data_array[NUM_THREADS];
+t_stats * thread_data_array;
 time_t start_time;
 time_t get_time_milli()
 {
@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 {
 	//test(argv);
 	int i;
-	if( argc < 5  || argc > 5 || !strcmp(argv[1], "-?") ) {
+	if( argc < 6  || argc > 6 || !strcmp(argv[1], "-?") ) {
 		(void)printf("hint: nweb Port-Number Top-Directory\t\tversion %d\n\n"
 	"\tnweb is a small and very safe mini web server\n"
 	"\tnweb only servers out file/web pages with extensions named below\n"
@@ -594,8 +594,11 @@ int main(int argc, char **argv)
 	(void)setpgrp();		/* break away from process group */
 	logger(LOG,"nweb starting",argv[1],getpid());
 	/* setup the network socket */
-	pthread_t threads[NUM_THREADS];
-	init_buff(get_schedule_type(argv[4]));
+	NUM_THREADS = atoi(argv[3]);
+	TBUFSIZE = atoi(argv[4]);
+	thread_data_array = calloc(NUM_THREADS, sizeof(t_stats));
+	pthread_t * threads = calloc(NUM_THREADS, sizeof(pthread_t));
+	init_buff(get_schedule_type(argv[5]));
 	struct timeval tv;
 	//used http://souptonuts.sourceforge.net/code/gettimeofday.c.html
 
