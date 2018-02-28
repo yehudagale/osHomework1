@@ -36212,3 +36212,444 @@ Connection: close
 Content-Type: text/html
 
 :52
+ INFO: nweb starting:2112:22161
+ INFO: SEND:index.html:1
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:1
+ INFO: SEND:index.html:4
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:4
+ INFO: SEND:index.html:5
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:5
+ INFO: SEND:index.html:8
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:8
+ INFO: SEND:index.html:10
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:10
+ INFO: SEND:index.html:12
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:12
+ INFO: SEND:index.html:14
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:14
+ INFO: SEND:index.html:15
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:15
+ INFO: SEND:index.html:16
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:16
+ INFO: SEND:index.html:19
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:19
+ INFO: SEND:nigel.jpg:2
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:2
+ INFO: SEND:nigel.jpg:3
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:3
+ INFO: SEND:nigel.jpg:6
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:6
+ INFO: SEND:nigel.jpg:7
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:7
+ INFO: SEND:nigel.jpg:9
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:9
+ INFO: SEND:nigel.jpg:11
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:11
+ INFO: SEND:nigel.jpg:13
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:13
+ INFO: SEND:nigel.jpg:17
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:17
+ INFO: SEND:nigel.jpg:18
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:18
+ INFO: SEND:nigel.jpg:20
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:20
+ INFO: SEND:nigel.jpg:21
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:21
+ INFO: SEND:index.html:22
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:22
+ INFO: SEND:index.html:23
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:23
+ INFO: SEND:index.html:24
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:24
+ INFO: SEND:index.html:26
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:26
+ INFO: SEND:index.html:28
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:28
+ INFO: SEND:index.html:32
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:32
+ INFO: SEND:index.html:35
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:35
+ INFO: SEND:index.html:36
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:36
+ INFO: SEND:index.html:37
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:37
+ INFO: SEND:index.html:39
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:39
+ INFO: SEND:nigel.jpg:25
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:25
+ INFO: SEND:nigel.jpg:27
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:27
+ INFO: SEND:nigel.jpg:29
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:29
+ INFO: SEND:nigel.jpg:30
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:30
+ INFO: SEND:nigel.jpg:31
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:31
+ INFO: SEND:nigel.jpg:33
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:33
+ INFO: SEND:nigel.jpg:34
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:34
+ INFO: SEND:nigel.jpg:38
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:38
+ INFO: SEND:nigel.jpg:40
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:40
+ INFO: SEND:index.html:41
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:41
+ INFO: SEND:index.html:43
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:43
+ INFO: SEND:index.html:45
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:45
+ INFO: SEND:index.html:48
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:48
+ INFO: SEND:index.html:49
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:49
+ INFO: SEND:index.html:51
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:51
+ INFO: SEND:index.html:55
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:55
+ INFO: SEND:index.html:57
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:57
+ INFO: SEND:index.html:58
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:58
+ INFO: SEND:index.html:59
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 248
+Connection: close
+Content-Type: text/html
+
+:59
+ INFO: SEND:nigel.jpg:42
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:42
+ INFO: SEND:nigel.jpg:44
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:44
+ INFO: SEND:nigel.jpg:46
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:46
+ INFO: SEND:nigel.jpg:47
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:47
+ INFO: SEND:nigel.jpg:50
+ INFO: Header:HTTP/1.1 200 OK
+Server: nweb/23.0
+Content-Length: 10184
+Connection: close
+Content-Type: image/jpg
+
+:50
