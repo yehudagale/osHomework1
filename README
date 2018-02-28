@@ -1,0 +1,113 @@
+﻿Aaron Schwartz-Messing,Yehuda Gale, Noah Potash
+aaron.schwartz-messing@mail.yu.edu
+yehuda.gale@gmail.com
+noah.potash@mail.yu.edu
+
+
+
+
+The structure of the client.c code:
+1.Main method:
+   1. Test for valid input
+   2. Store arguments into variables:
+      1. File1, file2, schedalg, host, and portnum are stored as global variables because they are information that all of the threads need to use. Storing them as globals simplifies the method APIs, requiring fewer variables
+      2. File1 and file2 are mutated by the threads if two input files are provided. A thread will atomically decide to send a request using file1 and then swap the contents of the file1 and file2 variables so that the next thread will use file2. This is needed for both FIFO and CONCUR.
+      3. Storing NULL for file2 if no second file is provided. Testing whether file2 is NULL tells the thread how many files were provided
+   1. Initiate the pthread_barrier
+   2. Create and run threads. The threads call the “loop” method
+2.Loop method
+   1. All that this method does is enter a never-ending loop sending get requests via the “GET” method. Mutexes and a barrier are used (in the GET method) in order to ensure that the threads send the requests with the appropriate synchronization.
+3.GET method
+   1. Establish a connection with the server
+   2. Send the request
+      1. CONCUR
+         1. Atomically store the contents of the file1 global variable and switch the contents of file1 and file2 so that the next thread sends the other file.
+         2. Wait at barrier until all threads are able to send
+         3. Send 
+      1. FIFO 
+         1. Atomically send request and alternate between file1 and file2. The mutex accomplishes both the atomicity and the FIFO behavior
+   1. Receive the response to the request. 
+      1. Wait at barrier so that no one receives until everyone has sent their requests.
+      2. Receive the response and print it, using a mutex to ensure that each thread prints the response in its entirety before another thread begins printing.
+4.run_with_error_checking
+   1. Used with any library call that requires error checking. Parameters: (String) name_of_method, (int) error code. Example: 
+      1. run_with_error_checking(“pthread_join”, pthread_join(myThread));
+   1. Categorizes error, prints error message, sends message to log, exits thread if fatal.
+
+
+5.Complete specification: GO BACK TO THIS
+* The threads alternate between file1 and file2. If there are an odd number of threads, the first round will begin and end with file1, the second round will begin and end with file2, etc.
+* Error checking: Error messages are sent both to stderr and to the log file. Fatal errors call pthread_exit(NULL). Information provided in error message are: thread_id, method_name, error_code
+
+
+Testing the client: I used the default server, and had the threads print to the terminal. I used printf() to keep track of which threads reached which points in the code, and which outputs were associated with which threads.
+
+
+
+
+The overall structure of the server.c code:
+1. Main method:
+   1. Test for valid inputs and number of arguments
+   2. gettimeofday in milliseconds at start of server
+   3. Initiate array of  pthread that will hold info for the thread statistics.
+   4. Loops and creates NUM_THREAD number of p-thread.
+   5. Runs master with command line arguments.
+      2. Structs:
+* connec - to keep track of a connection.
+* connec_queue  - to hold data for creation and use of queue used for scheduling.
+* connection_buffer - which, holds the info for number of threads dispatched, how full the buffer is and the type of scheduling policy used. Also holds pthread buffer mutex and conditions.
+* c_stat -  holds the info for the number of threads completed and a pthread mutex.
+* thread_states(t_stats) -holds the info of the thread statistics.
+ xStatThreadId,xStatThreadCount,xStatThreadHtml, and xStatThreadImage.
+3. get_time_milli method:
+        Using gettimeofday() it gets the time in milliseconds to be used for usage statistics.
+4 .get_schedule_type:
+* Given string of schedule type determine which type it is. FIFO,HPIC,or HPHC.
+            5.init_buff:
+* Initializes the buffer and everything(all other variables) that is needed for it to function.
+        6. Deque,enque, and isempty:
+* They are all queue related functions.
+7. add_to:
+* Adds a request to the buffer.
+* Depending on which scheduling type will determine how it gets put in the buffer and in which one(can also be a queue). 
+        8. get_con:
+* Gets a request from the buffer to then be moved to be process by a worker thread.
+* Depending on which scheduling type will determine how it gets removed from the buffer and in which one(can also be a queue).
+        9. logger:
+* Logs all data and errors to log file called nweb.log.
+        10. Web:
+* Executes the request and outputs usage statistics as headers for the client.
+        11. be_a_worker:
+* A worker thread that carries out web requests taken from the buffer.
+        12. be_a_master:
+* Master thread that receives client requests and adds them into the buffer for the worker to take.
+        13. read_req:
+* Reads the request string that comes from the client in order to get  useful info such as file type of the request.
+        14. test:
+* This tests the queue to make sure it is working correctly.
+        15. Run_with_error_checking:
+* Described previously in client.
+        
+
+
+2. Scheduling policies:
+      1. FIFO:
+         1. Turned the buffer into a circular queue called default queue.
+      1. HPIC: 
+         1. Created a second queue called priority queue. This queue would take image requests and worker threads would service those first. They would only get from the other queue if the priority queue was empty.
+                           iii.     HPHC:
+1. Created a second queue called priority queue. This queue would take html/text requests and worker threads would service those first. They would only get from the other queue if the priority queue was empty.
+                   iv. ANY:
+1. The any policy was done by turning the buffer into a LIFO stack.
+                             
+
+
+Complete specification: 
+* Error checking: Error messages are sent both to stderr and to the log file. Fatal errors call pthread_exit(NULL). Information provided in error message are: thread_id, method_name, error_code
+
+
+Testing the server: I used the default client, and had the threads and stderr print to the terminal. I used stderr to keep track of which threads reached which points in the code, and which outputs were associated with which threads. Later I tested doing the same thing, but with a multithreaded client.
+To test the different policies start a server with one thread like this:
+./server 2112 . 1 10 FIFO OR /server 2112 . 1 10 HPHC OR /server 2112 . 1 10 HPIC
+start the client like this: ./client localhost 2112 20 CONCUR /index.html /nigel.jpg  
+to test HPHC and HPIC check X-stat-thread-html and X-stat-thread-image. The higher priority item should sometimes be much higher than the other one. For FIFO they should randomly move but neither should be much higher consistently.
